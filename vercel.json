@@ -1,13 +1,5 @@
 {
   "version": 2,
-  "env": {
-    "GEMINI_API_KEY": "@gemini-api-key",
-    "GOOGLE_AI_API_KEY": "@gemini-api-key-backup",
-    "GENERATIVE_AI_KEY": "@gemini-api-key-fallback",
-    "NODE_ENV": "production",
-    "ENABLE_API_KEY_VALIDATION": "true",
-    "ENABLE_RATE_LIMITING": "true"
-  },
   "functions": {
     "api/generate-blog.js": {
       "maxDuration": 30,
