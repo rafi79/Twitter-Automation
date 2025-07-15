@@ -1,16 +1,49 @@
-import { initializeGemini, generateBlogContent, generateTweet } from '../lib/gemini.js';
-import { validateEnvironment, sanitizeInput, getSecureHeaders } from '../utils/security.js';
+// Fix import paths for Vercel deployment
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// Secure API key retrieval with fallbacks
+function getGeminiApiKey() {
+  const apiKey = process.env.GEMINI_API_KEY || 
+                 process.env.GOOGLE_AI_API_KEY || 
+                 process.env.GENERATIVE_AI_KEY;
+  
+  if (!apiKey) {
+    throw new Error('Gemini API key not found in environment variables');
+  }
+  
+  return apiKey;
+}
+
+// Initialize Gemini AI with error handling
+function initializeGemini() {
+  try {
+    const apiKey = getGeminiApiKey();
+    const genAI = new GoogleGenerativeAI(apiKey);
+    return genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  } catch (error) {
+    console.error('Failed to initialize Gemini AI:', error);
+    throw error;
+  }
+}
+
+// Sanitize user input
+function sanitizeInput(input) {
+  if (typeof input !== 'string') return '';
+  
+  return input
+    .trim()
+    .replace(/[<>]/g, '') // Remove potential HTML tags
+    .replace(/script/gi, '') // Remove script tags
+    .slice(0, 1000); // Limit length
+}
 
 export default async function handler(req, res) {
   // Enhanced CORS and security headers
-  const secureHeaders = getSecureHeaders();
-  Object.entries(secureHeaders).forEach(([key, value]) => {
-    res.setHeader(key, value);
-  });
-  
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -19,13 +52,6 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  // Validate environment
-  if (!validateEnvironment()) {
-    return res.status(500).json({ 
-      error: 'Server configuration error. Please contact administrator.' 
-    });
   }
 
   // Extract and sanitize input
@@ -47,11 +73,52 @@ export default async function handler(req, res) {
   try {
     console.log(`🎯 Generating content for topic: "${sanitizedTopic}"`);
     
-    // Generate blog content
-    const blogContent = await generateBlogContent(sanitizedTopic, sanitizedLength, sanitizedStyle);
+    // Initialize Gemini model
+    const model = initializeGemini();
     
-    // Generate tweet
-    const tweetContent = await generateTweet(sanitizedTopic);
+    // Create detailed prompt based on user preferences
+    const wordCount = sanitizedLength === 'short' ? '300-500' : 
+                     sanitizedLength === 'medium' ? '800-1200' : '1500-2500';
+    
+    const toneInstruction = sanitizedStyle === 'professional' ? 'professional and authoritative' : 
+                           sanitizedStyle === 'friendly' ? 'friendly and conversational' : 
+                           'casual and engaging';
+
+    const blogPrompt = `Write a comprehensive blog post about "${sanitizedTopic}".
+
+Requirements:
+- Length: ${wordCount} words
+- Tone: ${toneInstruction}
+- Include a catchy title (start with # for markdown)
+- Structure with clear headings and subheadings
+- Include practical tips and actionable advice
+- Add a compelling introduction and conclusion
+- Optimize for SEO and engagement
+- Include a call-to-action at the end
+- Use proper markdown formatting
+
+Format the output as a well-structured blog post with proper markdown formatting.`;
+
+    // Generate blog content
+    const blogResult = await model.generateContent(blogPrompt);
+    const blogContent = blogResult.response.text();
+
+    // Generate Twitter-friendly summary
+    const tweetPrompt = `Create a Twitter-friendly promotional tweet for a blog post about "${sanitizedTopic}".
+
+Requirements:
+- Maximum 280 characters (very important!)
+- Include relevant hashtags (2-3 maximum)
+- Be engaging and clickbait-worthy
+- Include emojis strategically
+- End with a call to action to read the blog
+- Include [LINK] where the link should go
+- Make it shareable and likely to get engagement
+
+Create a tweet that will make people want to click and read the full blog post.`;
+
+    const tweetResult = await model.generateContent(tweetPrompt);
+    const tweetContent = tweetResult.response.text().replace(/"/g, '').trim();
 
     // Extract title from blog content
     const titleMatch = blogContent.match(/^#\s*(.+)$/m);
