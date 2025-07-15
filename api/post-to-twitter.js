@@ -1,8 +1,8 @@
-import puppeteer from 'puppeteer';
+const puppeteer = require('puppeteer');
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -433,4 +433,4 @@ export default async function handler(req, res) {
       }
     }
   }
-}
+};
