@@ -1,5 +1,4 @@
-// Fix import paths for Vercel deployment
-import { GoogleGenerativeAI } from '@google/generative-ai';
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Secure API key retrieval with fallbacks
 function getGeminiApiKey() {
@@ -37,7 +36,7 @@ function sanitizeInput(input) {
     .slice(0, 1000); // Limit length
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Enhanced CORS and security headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -169,4 +168,4 @@ Create a tweet that will make people want to click and read the full blog post.`
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
-}
+};
