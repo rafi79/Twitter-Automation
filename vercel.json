@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "next.config.js",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    }
+  ],
+  "env": {
+    "GEMINI_API_KEY": "@gemini-api-key"
+  },
+  "functions": {
+    "api/generate-blog.js": {
+      "maxDuration": 30
+    },
+    "api/post-to-twitter.js": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "api/blogs.js": {
+      "maxDuration": 10
+    }
+  }
+}
