@@ -5,12 +5,7 @@ const nextConfig = {
   env: {
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   },
-  api: {
-    bodyParser: {
-      sizeLimit: '1mb',
-    },
-    responseLimit: false,
-  },
+  // Remove the invalid 'api' configuration
   async headers() {
     return [
       {
@@ -32,7 +27,7 @@ const nextConfig = {
       },
     ];
   },
-  // Increase timeout for Puppeteer operations
+  // Configure for Puppeteer
   experimental: {
     serverComponentsExternalPackages: ['puppeteer'],
   },
